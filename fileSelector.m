@@ -1,8 +1,6 @@
 function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir, fileType)
-    exit = 0;
-
     if nargin < 1 || exist(startingDirectory, 'dir') ~= 7
-        startingDirectory = fileparts(mfilename('fullpath'));
+        startingDirectory = pwd;
     end
     if nargin < 2
         checkSubDir = true;
@@ -11,9 +9,32 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
         fileType = '*.ap.bin';
     end
     
+    % first search starting directory
     fileList = {};
     excludedChannel = {};
-    
+    if checkSubDir
+        subpath = strsplit(genpath(startingDirectory), ';');
+        isOutDir = cellfun(@(x) contains(x, '.'), subpath); % I remove folder with dots.
+        subpath(isOutDir) = [];
+        nSub = length(subpath) - 1; % the last data is empty
+        files = [];
+        for iS = 1:nSub
+            files = [files; dir(fullfile(subpath{iS}, fileType))];
+        end
+    else                         
+        files = dir(fullfile(startingDirectory, fileType));
+    end
+
+    nFile = length(files);
+    if nFile > 0
+        filepath = cellfun(@fullfile, {files.folder}, {files.name}, 'UniformOutput', false);
+
+        excludedChannel = [excludedChannel, cell(1, nFile)];
+        [fileList, iA] = unique([fileList, filepath]);
+        excludedChannel = excludedChannel(iA);
+    end
+              
+    exit = 0;
     while ~exit
         if ~isempty(fileList)
             fprintf('\n');
@@ -56,11 +77,7 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
                     nFile = length(files);
 
                     if nFile==0; continue; end
-
-                    filepath = cell(1, nFile);
-                    for iF = 1:nFile
-                        filepath{iF} = fullfile(files(iF).folder, files(iF).name);
-                    end
+                    filepath = cellfun(@fullfile, {files.folder}, {files.name}, 'UniformOutput', false);
 
                     excludedChannel = [excludedChannel, cell(1, nFile)];
                     [fileList, iA] = unique([fileList, filepath]);
@@ -103,7 +120,7 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
                     if isempty(ch); continue; end
                     inChannel = ismember(ch, 1:384);
                     nFile = length(fileList);
-                    excludedChannel = repmat({ch(inChannel)}, nFile, 1);
+                    excludedChannel = repmat({sort(ch(inChannel))}, nFile, 1);
                 else
                     inIndex = ismember(id, 1:length(fileList));
                     if sum(inIndex) > 0
@@ -112,7 +129,7 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
                         inChannel = ismember(ch, 1:384);
                        
                         for iCh = id(inIndex)
-                            excludedChannel{iCh} = ch(inChannel);
+                            excludedChannel{iCh} = sort(ch(inChannel));
                         end
                     end
                 end
