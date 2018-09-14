@@ -1,11 +1,19 @@
-function [fileList, excludedChannel] = fileSelector(startingDirectory)
+function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir, fileType)
     exit = 0;
 
     if nargin < 1 || exist(startingDirectory, 'dir') ~= 7
         startingDirectory = fileparts(mfilename('fullpath'));
     end
+    if nargin < 2
+        checkSubDir = true;
+    end    
+    if nargin < 3
+        fileType = '*.ap.bin';
+    end
+    
     fileList = {};
     excludedChannel = {};
+    
     while ~exit
         if ~isempty(fileList)
             fprintf('\n');
@@ -23,8 +31,8 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory)
         disp('[3] Delete file selection');
         disp('[4] Set channel to exclude');
         disp('[5] View raw data');
-        disp('[r,y] Run Kilosort');
-        disp(['[q,x,c] Exit', newline]);
+        disp('[s] Start sorting');
+        disp(['[q] Quit', newline]);
         
         cmd = input('Select menu: ', 's');
 
@@ -32,14 +40,26 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory)
             case '1'
                 path = uigetdir(startingDirectory, 'Select folder');
                 if ischar(path)
-                    files = dir(fullfile(path, '*.ap.bin'));
+                    if checkSubDir
+                        subpath = strsplit(genpath(path), ';');
+                        isOutDir = cellfun(@(x) contains(x, '.'), subpath); % I remove folder with dots.
+                        subpath(isOutDir) = [];
+                        nSub = length(subpath) - 1; % the last data is empty
+                        files = [];
+                        for iS = 1:nSub
+                            files = [files; dir(fullfile(subpath{iS}, fileType))];
+                        end
+                    else                         
+                        files = dir(fullfile(path, fileType));
+                    end
+                    
                     nFile = length(files);
 
                     if nFile==0; continue; end
 
                     filepath = cell(1, nFile);
                     for iF = 1:nFile
-                        filepath{iF} = fullfile(path, files(iF).name);
+                        filepath{iF} = fullfile(files(iF).folder, files(iF).name);
                     end
 
                     excludedChannel = [excludedChannel, cell(1, nFile)];
@@ -47,7 +67,7 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory)
                     excludedChannel = excludedChannel(iA);
                 end
             case '2'
-                [file, path] = uigetfile(fullfile(startingDirectory, '*.ap.bin'), ...
+                [file, path] = uigetfile(fullfile(startingDirectory, fileType), ...
                     'Select one or more files', ...
                     'MultiSelect', 'on');
                 if ischar(file)
@@ -103,9 +123,9 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory)
                 if inIndex
                     viewRaw(fileList{id(1)});
                 end
-            case 'r'
+            case {'s', 'y'}
                 exit = 1;
-            case {'q', 'x', 'c'}
+            case {'q', 'c'}
                 fileList = {};
                 excludedChannel = {};
                 exit = 1;

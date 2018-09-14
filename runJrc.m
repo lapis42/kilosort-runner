@@ -12,12 +12,19 @@ function runJrc()
     
     % Redo policy: choose whether do clustering if output file alreay exists, {'yes', 'no', 'ask'}
     recluster = 'no';
+    
+    % Check sub-directories to find files
+    checkSubDir = true;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                        USER PRESET END                          %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    disp('***************************************');
+    disp('******** Batch JRClust sorting ********');
+    disp('***************************************');
 
     %% 1. Choose files to sort
-    [fileList, excludedChannel] = fileSelector(startingDirectory);
+    [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir);
     if isempty(fileList); return; end
     addpath(jrcDirectory);
     

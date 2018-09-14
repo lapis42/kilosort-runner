@@ -1,21 +1,31 @@
 function runPhy()
+%runPhy Starts Phy manual sorting
+    % To use this code, phy should be installed using Anaconda
+    % This activates 'Anaconda prompt' script and activates phy branch.
     startingDirectory = 'E:';
-    anacondaDirectory = 'C:\Users\kimd11\AppData\Local\Continuum\anaconda3\';
+    anacondaDirectory = ['C:\Users\', getenv('USERNAME'), '\AppData\Local\Continuum\anaconda3\'];
     
-    [file, path] = uigetfile(fullfile(startingDirectory, '*_rez.mat'));
+    
+    [file, path] = uigetfile(fullfile(startingDirectory, 'params.py'));
     filepath = fullfile(path, file);
     
-    load(filepath);
-    rezToPhy(rez, path);
     
+    %% Windows command parts: do not touch until phy is started.
     NET.addAssembly('System.Windows.Forms');
     sendkey = @(strkey) System.Windows.Forms.SendKeys.SendWait(strkey);
     
+    % run Anaconda prompt. If your python is in the 'Path' and runs at cmd,
+    % omit this.
     system([fullfile(anacondaDirectory, 'Scripts\activate.bat'), ' ', anacondaDirectory, ' &']);
     pause(1);
+    
+    % active phy environment (conda environment). if your environment is at
+    % the main base, you don't need to run this.
     sendkey('activate phy');
     sendkey('{ENTER}');
     pause(0.5);
+    
+    % change volume and directory
     volume = strsplit(path, '\');
     sendkey(volume{1});
     sendkey('{ENTER}');
@@ -23,6 +33,8 @@ function runPhy()
     sendkey(['cd ', path]);
     sendkey('{ENTER}');
     pause(0.5);
+    
+    % run phy template-gui
     sendkey('phy template-gui params.py');
     sendkey('{ENTER}');
 end

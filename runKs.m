@@ -15,13 +15,22 @@ function runKs()
     
     % Redo policy: choose whether do clustering if output file alreay exists, {'yes', 'no', 'ask'}
     recluster = 'no';
+    
+    % Make phy format file
+    makePhy = true;
+    
+    % Check sub-directories to find files
+    checkSubDir = true;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                        USER PRESET END                          %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
+    disp('*****************************************');
+    disp('******** Batch Kilosort2 sorting ********');
+    disp('*****************************************');
 
     %% Choose files to sort
-    [fileList, excludedChannel] = fileSelector(startingDirectory);
+    [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir);
     if isempty(fileList); return; end
 
     
@@ -46,49 +55,65 @@ function runKs()
     %% run
     nFile = length(fileList);
     for iFile = 1:nFile
+        clear rez
         if exist(fileList{iFile}, 'file') == 2
             [~, fileName] = fileparts(fileList{iFile});
             disp([newline, '================    ', fileName, '    ================', newline]);
             ops = setOps(ops, fileList{iFile}, excludedChannel{iFile});
       
             % recluster policy check
+            doSort = true;
             fname = fullfile(ops.saveDir, [fileName, '_rez.mat']);
             if exist(fname, 'file')==2
                 disp([fname, ' already exists.']);
                 if strcmp(recluster, 'ask')
                     cmd = input('Re-cluster this file? [y/N]: ', 's');
                     if isempty(cmd) || lower(cmd(1)) ~= 'y'
-                        continue;
+                        doSort = false;
                     end
                 elseif strcmp(recluster, 'no')
-                    continue;
+                    doSort = false;
                 end
             end
-
-            % main run
-            disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', preprocessing']);
-            rez = preprocessDataSub(ops);
-
-            disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', preclustering']);
-            rez = clusterSingleBatches(rez);
-
-            disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', optimization']);
-            rez = learnAndSolve8b(rez);
-
-            disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', spilt']);
-            rez = splitAllClusters(rez);
-
-            disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', saving data to ', fname]);
-            fname = fullfile(ops.saveDir, [fileName, '_rez.mat']);
-            save(fname, 'rez', '-v7.3');
             
-%             disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', saving data to phy format']);
-%             filenamesplit = strsplit(filename, '.');
-%             phySaveDir = fullfile(ops.saveDir, filenamesplit{1});
-%             if exist(phySaveDir, 'dir')~=7
-%                 mkdir(phySaveDir);
-%             end
-%             rezToPhy(rez, phySaveDir);
+            % main run
+            if doSort
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', preprocessing']);
+                rez = preprocessDataSub(ops);
+
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', preclustering']);
+                rez = clusterSingleBatches(rez);
+
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', optimization']);
+                rez = learnAndSolve8b(rez);
+
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', spilt']);
+                rez = splitAllClusters(rez);
+
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', saving data to ', fname]);
+                save(fname, 'rez', '-v7.3');
+            end
+            
+            if makePhy
+                phyName = fullfile(ops.saveDir, 'params.py');
+                if exist(phyName, 'file') == 2
+                    disp([phyName, ' already exists.']);
+                    if strcmp(recluster, 'ask')
+                        cmd = input('Remake phy file? [y/N]: ', 's');
+                        if isempty(cmd) || lower(cmd(1)) ~= 'y'
+                            continue;
+                        end
+                    elseif strcmp(recluster, 'no')
+                        continue;
+                    end
+                end
+                    
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', saving data to phy format']);
+                if exist(fname, 'var') ~= 1
+                    load(fname, 'rez');
+                end
+                rezToPhy(rez, ops.saveDir);
+            end
 
             disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', done']);
             close all;
