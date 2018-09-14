@@ -1,11 +1,13 @@
-function runJrc()
+function runJrc(startingDirectory)
     %RUNJRC Executes JRCLUST program
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                       USER PRESET START                         %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % default data directory
-    startingDirectory = 'E:';
+    if nargin < 1 || exist(startingDirectory, 'dir')~=7
+        startingDirectory = 'E:';
+    end
     
     % JRClust location
     jrcDirectory = 'C:\Users\kimd11\OneDrive - Howard Hughes Medical Institute\src\JRClust';
@@ -46,14 +48,22 @@ function runJrc()
         end
         
         % exclude channel
-        P = loadParams(prmFile{iFile});
+        try
+            P = loadParams(prmFile{iFile}, 0); % kilosort branch
+        catch
+            P = loadParam_(prmFile{iFile}, 0); % master branch
+        end
         if isempty(P); continue; end
         P.viSiteZero = excludedChannel{iFile};
-        exportParams(prmFile{iFile}, prmFile{iFile}, 0);
+        try
+            updateParamFile(P, prmFile{iFile}); % kilosort branch
+        catch
+            edit_prm_file_(P, prmFile{iFile}); % master branch
+        end
 
         % detect and sort
-        if exist(fname, 'file')==2
-            disp([fname, ' already exists.']);
+        if exist(matFile{iFile}, 'file')==2
+            disp([matFile{iFile}, ' already exists.']);
             if strcmp(recluster, 'ask')
                 cmd = input('Re-cluster this file? [y/N]: ', 's');
                 if isempty(cmd) || lower(cmd(1)) ~= 'y'
@@ -64,13 +74,13 @@ function runJrc()
             end
         end
         
-        jrc clear; % clear used memory
+        jrc('clear'); % clear used memory
         jrc('spikesort', prmFile{iFile});
         sortYes = true;
     end
 
     if sortYes
-        slack('runJrc done'); % DK's notification function...
+%         slack('runJrc done'); % DK's notification function...
     end
 
     %% 3. After automated spike sorting, do manual spike sorting
