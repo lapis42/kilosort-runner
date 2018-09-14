@@ -1,11 +1,13 @@
-function runKs()
+function runKs(startingDirectory)
     %RUNKS Batch sorting using Kilosort2
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                       USER PRESET START                         %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Starting directory: directory to start finding files.
-    startingDirectory = 'E:'; 
+    if nargin < 1 || exist(startingDirectory, 'dir')~=7
+        startingDirectory = 'E:';
+    end
     
     % Working directory: directory for saving temporary data. Choose fast drive like SSD.
     workingDirectory = 'E:\temp'; 
