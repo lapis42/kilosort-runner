@@ -48,17 +48,19 @@ function runJrc(startingDirectory)
         end
         
         % exclude channel
-        try
-            P = loadParams(prmFile{iFile}, 0); % kilosort branch
-        catch
-            P = loadParam_(prmFile{iFile}, 0); % master branch
-        end
-        if isempty(P); continue; end
-        P.viSiteZero = excludedChannel{iFile};
-        try
-            updateParamFile(P, prmFile{iFile}); % kilosort branch
-        catch
-            edit_prm_file_(P, prmFile{iFile}); % master branch
+        if ~isempty(excludedChannel{iFile})
+            try
+                P = loadParams(prmFile{iFile}, 0); % kilosort branch
+            catch
+                P = loadParam_(prmFile{iFile}, 0); % master branch
+            end
+            if isempty(P); continue; end
+            P.viSiteZero = excludedChannel{iFile};
+            try
+                updateParamFile(P, prmFile{iFile}); % kilosort branch
+            catch
+                edit_prm_file_(P, prmFile{iFile}); % master branch
+            end
         end
 
         % detect and sort
