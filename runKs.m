@@ -6,7 +6,7 @@ function runKs(startingDirectory)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Starting directory: directory to start finding files.
     if nargin < 1 || exist(startingDirectory, 'dir')~=7
-        startingDirectory = 'E:';
+        startingDirectory = 'E:\';
     end
     
     % Working directory: directory for saving temporary data. Choose fast drive like SSD.

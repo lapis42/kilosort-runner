@@ -6,7 +6,7 @@ function runJrc(startingDirectory)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % default data directory
     if nargin < 1 || exist(startingDirectory, 'dir')~=7
-        startingDirectory = 'E:';
+        startingDirectory = 'E:\';
     end
     
     % JRClust location
