@@ -41,7 +41,11 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
             nFile = length(fileList);
             for iF = 1:nFile
                 nS = length(fileList{iF});
-                fprintf('%d: %60s   ', iF, fileList{iF}(max(nS-60, 1):end));
+                if nS <= 60
+                    fprintf('%d: %60s   ', iF, fileList{iF});
+                else
+                    fprintf('%d: ...%57s   ', iF, fileList{iF}(end-56:end));
+                end
                 fprintf('%5d', excludedChannel{iF});
                 fprintf('\n');
             end
