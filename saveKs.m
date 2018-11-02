@@ -59,9 +59,9 @@ function Spike = saveKs(foldername)
     end
     
     % save file
-    fileTemp = dir(fullfile(foldername, '*.ap.bin'));
-    [~, filenameTemp] = fileparts(fileTemp(1).name);
-    filename = fullfile(fileTemp(1).folder, [filenameTemp, '_imec3_opt3_data.mat']);
+    fileTemp = dir(fullfile(foldername, '*.ap.bin')); 
+    [~, filenameTemp] = fileparts(fileTemp(end).name); % be careful if there are multiple binary files...
+    filename = fullfile(fileTemp(end).folder, [filenameTemp, '_imec3_opt3_data.mat']);
     save(filename, 'Spike');
 end
 
