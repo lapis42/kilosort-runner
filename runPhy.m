@@ -7,8 +7,11 @@ function runPhy()
     
     
     [file, path] = uigetfile(fullfile(startingDirectory, 'params.py'));
-    filepath = fullfile(path, file);
-    
+    if ischar(file)
+        filepath = {fullfile(path, file)};
+    else
+        return
+    end    
     
     %% Windows command parts: do not touch until phy is started.
     NET.addAssembly('System.Windows.Forms');
