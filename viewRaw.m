@@ -17,11 +17,27 @@ function viewRaw(binFile)
     meta = readOption(binFile);
     dataInfo = dir(binFile);
     nByte = dataInfo.bytes;
-    S.gain = 500;
-    S.millivoltPerBit = single((1.2 / S.gain * 1000) / 2^10);
-    S.nChannel = meta.nSavedChans;
-    S.nSample = nByte / (2 * S.nChannel);
-    S.nLoadSample = min(diff(S.timeRange) * meta.imSampRate, S.nSample);
+    
+    if nByte == meta.fileSizeBytes
+        disp('Correct file size');
+    else
+        disp('Corrupted file');
+        return
+    end
+    
+    if strcmp(meta.typeThis, 'imec')
+        S.gain = 500;
+        S.millivoltPerBit = single(((meta.imAiRangeMax-meta.imAiRangeMin) / S.gain * 1000) / 2^10);
+        S.nChannel = meta.nSavedChans;
+        S.nSample = meta.fileSizeBytes / (2 * S.nChannel);
+        S.nLoadSample = min(diff(S.timeRange) * meta.imSampRate, S.nSample);
+    else
+        S.gain = meta.niMNGain;
+        S.millivoltPerBit = single(((meta.niAiRangeMax-meta.niAiRangeMin) / S.gain * 1000) / 2^10);
+        S.nChannel = meta.nSavedChans;
+        S.nSample = meta.fileSizeBytes / (2 * S.nChannel);
+        S.nLoadSample = min(diff(S.timeRange) * meta.niSampRate, S.nSample);
+    end
     S.nLoadByte = 2 * S.nChannel * S.nLoadSample;
     S.nBin = floor(S.nSample / S.nLoadSample);
     S.iBin = 1;

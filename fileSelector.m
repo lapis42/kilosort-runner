@@ -6,7 +6,7 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
         checkSubDir = true;
     end    
     if nargin < 3
-        fileType = '*.ap.bin';
+        fileType = '*.*.bin';
     end
     
     % first search starting directory
@@ -14,7 +14,7 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
     excludedChannel = {};
     if checkSubDir
         subpath = strsplit(genpath(startingDirectory), ';');
-        isOutDir = cellfun(@(x) contains(x, '.'), subpath); % I remove folder with dots.
+        isOutDir = cellfun(@(x) contains(x, {'.'}), subpath); % I remove folder with dots.
         subpath(isOutDir) = [];
         nSub = length(subpath) - 1; % the last data is empty
         files = [];

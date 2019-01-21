@@ -23,6 +23,13 @@ function runKs(startingDirectory)
     
     % Check sub-directories to find files
     checkSubDir = true;
+    
+    % Config file name
+    configFileName = 'configFile384';
+    fileType = '*.imec.ap.bin';
+%     configFileName = 'configFilehh2'; % Janelia acute 64-channel HH-2 probe (2x32)
+%     configFileName = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64)
+%     fileType = '*.nidq.bin';
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                        USER PRESET END                          %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,7 +39,7 @@ function runKs(startingDirectory)
     disp('*****************************************');
 
     %% Choose files to sort
-    [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir);
+    [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir, fileType);
     if isempty(fileList); return; end
 
     
@@ -48,7 +55,7 @@ function runKs(startingDirectory)
     end
     
     % load preset
-    configFile384;
+    eval([configFileName, ';']);
     ops.trange = [0, Inf];
     ops.wd = workingDirectory;
     ops.fproc = fullfile(workingDirectory, 'temp_wh.dat');
@@ -121,10 +128,11 @@ function runKs(startingDirectory)
             close all;
         end
     end
+    slack('runKs done');
 end
 
-function ops = setOps(ops, fileName, excludedChannel);
-    load('neuropixPhase3A_kilosortChanMap.mat');
+function ops = setOps(ops, fileName, excludedChannel)
+    load(ops.chanMap);
     connected(excludedChannel) = false;
 
     cm = struct();
@@ -132,7 +140,13 @@ function ops = setOps(ops, fileName, excludedChannel);
     cm.xcoords = xcoords(connected);
     cm.ycoords = ycoords(connected);
     ops.chanMap = cm;
-    ops.NchanTOT = 385;
+    
+    nChannel = length(connected);
+    if nChannel == 384
+        ops.NchanTOT = 385;
+    elseif nChannel == 64
+        ops.NchanTOT = 96;
+    end
     
     ops.fbinary = fileName;
     fileDir = fileparts(fileName);

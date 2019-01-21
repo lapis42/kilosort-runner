@@ -20,22 +20,22 @@ function runPhy()
     % run Anaconda prompt. If your python is in the 'Path' and runs at cmd,
     % omit this.
     system([fullfile(anacondaDirectory, 'Scripts\activate.bat'), ' ', anacondaDirectory, ' &']);
-    pause(1);
+    pause(0.5);
     
     % active phy environment (conda environment). if your environment is at
     % the main base, you don't need to run this.
     sendkey('activate phy');
     sendkey('{ENTER}');
-    pause(0.5);
+    pause(0.25);
     
     % change volume and directory
     volume = strsplit(path, '\');
     sendkey(volume{1});
     sendkey('{ENTER}');
-    pause(0.5);
+    pause(0.25);
     sendkey(['cd ', path]);
     sendkey('{ENTER}');
-    pause(0.5);
+    pause(0.25);
     
     % run phy template-gui
     sendkey('phy template-gui params.py');
