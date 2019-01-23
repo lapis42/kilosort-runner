@@ -25,11 +25,10 @@ function runKs(startingDirectory)
     checkSubDir = true;
     
     % Config file name
-    configFileName = 'configFile384';
-    fileType = '*.imec.ap.bin';
-%     configFileName = 'configFilehh2'; % Janelia acute 64-channel HH-2 probe (2x32)
-%     configFileName = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64)
-%     fileType = '*.nidq.bin';
+    configFileNameImec = 'configFile384';
+    configFileNameNidq = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64)
+%     configFileNameNidq = 'configFilehh2'; % Janelia acute 64-channel HH-2 probe (2x32)
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                        USER PRESET END                          %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,7 +38,7 @@ function runKs(startingDirectory)
     disp('*****************************************');
 
     %% Choose files to sort
-    [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir, fileType);
+    [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir);
     if isempty(fileList); return; end
 
     
@@ -54,20 +53,24 @@ function runKs(startingDirectory)
         mkdir(workingDirectory);
     end
     
-    % load preset
-    eval([configFileName, ';']);
-    ops.trange = [0, Inf];
-    ops.wd = workingDirectory;
-    ops.fproc = fullfile(workingDirectory, 'temp_wh.dat');
-    
-    
     %% run
     nFile = length(fileList);
     for iFile = 1:nFile
-        clear rez
+        clear rez ops
         if exist(fileList{iFile}, 'file') == 2
             [~, fileName] = fileparts(fileList{iFile});
             disp([newline, '================    ', fileName, '    ================', newline]);
+            
+            % load preset
+            meta = readMeta(fileList{iFile});
+            if strcmp(meta.typeThis, 'imec') && strcmp(meta.nSavedChans, '385')
+                eval([configFileNameImec, ';']);
+            elseif strcmp(meta.typeThis, 'nidq')
+                eval([configFileNameNidq, ';']);
+            end
+            ops.trange = [0, Inf];
+            ops.wd = workingDirectory;
+            ops.fproc = fullfile(workingDirectory, 'temp_wh.dat');
             ops = setOps(ops, fileList{iFile}, excludedChannel{iFile});
       
             % recluster policy check
@@ -152,4 +155,28 @@ function ops = setOps(ops, fileName, excludedChannel)
     fileDir = fileparts(fileName);
     ops.rootZ = fileDir;
     ops.saveDir = fileDir;
+end
+
+function meta = readMeta(binFile)
+    % Parse ini file into cell entries C{1}{i} = C{2}{i}
+    metaFile = replace(binFile, '.bin', '.meta');
+    if exist(metaFile, 'file')~=2
+        error('No meta file exists.');
+    end
+    fid = fopen(metaFile, 'r');
+    C = textscan(fid, '%[^=] = %[^\r\n]');
+    fclose(fid);
+
+    % New empty struct
+    meta = struct();
+
+    % Convert each cell entry into a struct entry
+    for i = 1:length(C{1})
+        tag = C{1}{i};
+        if tag(1) == '~'
+            % remake tag excluding first character
+            tag = sprintf('%s', tag(2:end));
+        end
+        meta.(tag) = C{2}{i};
+    end
 end

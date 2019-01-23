@@ -24,6 +24,10 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
     else                         
         files = dir(fullfile(startingDirectory, fileType));
     end
+    
+    % exclude '*.lf.bin'
+    isLFP = contains({files.name}, '.lf.bin');
+    files(isLFP) = [];
 
     nFile = length(files);
     if nFile > 0
