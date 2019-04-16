@@ -1,4 +1,4 @@
-function runKs(startingDirectory)
+function runKs(startingDirectory, probe_type)
     %RUNKS Batch sorting using Kilosort2
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,11 +9,15 @@ function runKs(startingDirectory)
         startingDirectory = 'E:\';
     end
     
+    if nargin < 2
+        probe_type = 'imec';
+    end
+    
     % Working directory: directory for saving temporary data. Choose fast drive like SSD.
     workingDirectory = 'E:\temp'; 
     
     % Kilosort location
-    kilosortDirectory = 'C:\Users\kimd11\OneDrive - Howard Hughes Medical Institute\src\Kilosort2';
+    kilosortDirectory = fullfile(getenv('OneDrive'), 'src\Kilosort2');
     
     % Redo policy: choose whether do clustering if output file alreay exists, {'yes', 'no', 'ask'}
     recluster = 'no';
@@ -25,9 +29,16 @@ function runKs(startingDirectory)
     checkSubDir = true;
     
     % Config file name
+    if strcmp(lower(probe_type), 'nidq')
+        fileType = '*.nidq.bin';  
+    else
+        fileType = '*.imec.ap.bin';  
+    end
+    
     configFileNameImec = 'configFile384';
-    configFileNameNidq = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64)
+    configFileNameNidq = 'configFilehh3x2'; % Janelia acute 64-channel HH-3 probe (2x64)
 %     configFileNameNidq = 'configFilehh2'; % Janelia acute 64-channel HH-2 probe (2x32)
+%     configFileNameNidq = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                        USER PRESET END                          %%%
@@ -38,7 +49,7 @@ function runKs(startingDirectory)
     disp('*****************************************');
 
     %% Choose files to sort
-    [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir);
+    [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir, fileType);
     if isempty(fileList); return; end
 
     
@@ -147,8 +158,8 @@ function ops = setOps(ops, fileName, excludedChannel)
     nChannel = length(connected);
     if nChannel == 384
         ops.NchanTOT = 385;
-    elseif nChannel == 64
-        ops.NchanTOT = 96;
+    elseif nChannel == 64 || nChannel == 128
+        ops.NchanTOT = nChannel + 32;
     end
     
     ops.fbinary = fileName;
