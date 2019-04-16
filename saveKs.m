@@ -59,21 +59,16 @@ function Spike = saveKs(foldername)
     end
     
     % save file
-    fileTemp = dir(fullfile(foldername, '*.ap.bin')); 
-    [~, filenameTemp] = fileparts(fileTemp(end).name); % be careful if there are multiple binary files...
-    filename = fullfile(fileTemp(end).folder, [filenameTemp, '_imec3_opt3_data.mat']);
+    foldername_split = strsplit(foldername, '\');
+    filename = fullfile(foldername, [foldername_split{end}, '_data.mat']);
     save(filename, 'Spike');
 end
 
 
 function validCluster = clusterGroup(filename)
-    fid = fopen(filename);
-    C = textscan(fid, '%f%s', ...
-        'HeaderLines', 1);
-    fclose(fid);
-        
-    inCluster = strcmp(C{1, 2}, 'good');
-    validCluster = C{1, 1}(inCluster);
+    C = tdfread(filename);
+    inCluster = strcmp(cellstr(C.group), 'good');
+    validCluster = C.cluster_id(inCluster);
 end
     
     
