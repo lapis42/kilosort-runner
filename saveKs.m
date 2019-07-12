@@ -1,12 +1,12 @@
 function Spike = saveKs(foldername)
     if nargin < 1 || isempty(foldername) || exist(foldername, 'dir') ~= 7
-        if strcmp(computer, 'PCWIN64')
-            foldername = uigetdir('E:\');
-        elseif strcmp(computer, 'GLNXA64')
+        if isunix
             folderList = fileSelector('/mnt/data/', 'params.py');
             if ~isempty(folderList)
                 foldername = fileparts(folderList{1});
             end
+        else
+            foldername = uigetdir('E:\');
         end
     end        
 

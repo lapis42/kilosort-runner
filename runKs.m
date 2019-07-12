@@ -6,10 +6,10 @@ function runKs(startingDirectory, probe_type)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Starting directory: directory to start finding files.
     if nargin < 1 || exist(startingDirectory, 'dir')~=7
-        if strcmp(computer, 'PCWIN64') % windows
-            startingDirectory = 'E:\';
-        elseif strcmp(computer, 'GLNXA64') % linux
+        if isunix 
             startingDirectory = '/mnt/data/';
+        else
+            startingDirectory = 'E:\';
         end
     end
     
@@ -21,10 +21,10 @@ function runKs(startingDirectory, probe_type)
     workingDirectory = fullfile(startingDirectory, 'temp'); 
     
     % Kilosort location
-    if strcmp(computer, 'PCWIN64') % windows
-        DROPBOX = fullfile('C:\\Users\', getenv('USERNAME'), 'Dropbox');
-    elseif strcmp(computer, 'GLNXA64') % linux
+    if isunix 
         DROPBOX = '/home/kimd/Dropbox';
+    else
+        DROPBOX = fullfile('C:\\Users\', getenv('USERNAME'), 'Dropbox');
     end
     kilosortDirectory = fullfile(DROPBOX, 'src', 'Kilosort2');
     
