@@ -9,7 +9,7 @@ function runKs(startingDirectory, probe_type)
         if strcmp(computer, 'PCWIN64') % windows
             startingDirectory = 'E:\';
         elseif strcmp(computer, 'GLNXA64') % linux
-            startingDirectory = '/media/data/';
+            startingDirectory = '/mnt/data/';
         end
     end
     
@@ -68,7 +68,7 @@ function runKs(startingDirectory, probe_type)
     
     %% Preparation
     % add path kilosort directory (excluding git directory with '.')
-    ksSubDir = strsplit(genpath(kilosortDirectory), pathsep});
+    ksSubDir = strsplit(genpath(kilosortDirectory), pathsep);
     isGitDir = cellfun(@(x) ismember('.', x), ksSubDir);
     addpath(strjoin(ksSubDir(~isGitDir), pathsep));
     
