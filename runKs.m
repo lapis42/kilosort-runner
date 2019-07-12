@@ -68,13 +68,9 @@ function runKs(startingDirectory, probe_type)
     
     %% Preparation
     % add path kilosort directory (excluding git directory with '.')
-    ksSubDir = strsplit(genpath(kilosortDirectory), {';', ':'});
+    ksSubDir = strsplit(genpath(kilosortDirectory), pathsep});
     isGitDir = cellfun(@(x) ismember('.', x), ksSubDir);
-    if strcmp(computer, 'PCWIN64')
-        addpath(strjoin(ksSubDir(~isGitDir), ';'));
-    elseif strcmp(computer, 'GLNXA64')
-        addpath(strjoin(ksSubDir(~isGitDir), ':'));
-    end
+    addpath(strjoin(ksSubDir(~isGitDir), pathsep));
     
     
     % make working directory

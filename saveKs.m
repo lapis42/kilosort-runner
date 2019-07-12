@@ -1,7 +1,18 @@
 function Spike = saveKs(foldername)
     if nargin < 1 || isempty(foldername) || exist(foldername, 'dir') ~= 7
-        foldername = uigetdir('E:\');
+        if strcmp(computer, 'PCWIN64')
+            foldername = uigetdir('E:\');
+        elseif strcmp(computer, 'GLNXA64')
+            folderList = fileSelector('/mnt/data/', 'params.py');
+            if ~isempty(folderList)
+                foldername = fileparts(folderList{1});
+            end
+        end
     end        
+
+    if isempty(foldername) || exist(foldername, 'file')==0
+        return
+    end
       
     %% spike time
     spikeTime = readNPY(fullfile(foldername, 'spike_times.npy'));
@@ -18,6 +29,7 @@ function Spike = saveKs(foldername)
     
     
     %% spike amplitude
+    % please make sure that the 'npy-matlab' package is installed.
     template = readNPY(fullfile(foldername, 'templates.npy')); % 564x82x373 single
     winv = readNPY(fullfile(foldername, 'whitening_mat_inv.npy')); % 373x373 double
     amplitude = readNPY(fullfile(foldername, 'amplitudes.npy')); % 5256134x1 double
@@ -59,7 +71,7 @@ function Spike = saveKs(foldername)
     end
     
     % save file
-    foldername_split = strsplit(foldername, '\');
+    foldername_split = strsplit(foldername, filesep);
     filename = fullfile(foldername, [foldername_split{end}, '_data.mat']);
     save(filename, 'Spike');
 end

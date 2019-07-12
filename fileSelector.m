@@ -13,7 +13,7 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
     fileList = {};
     excludedChannel = {};
     if checkSubDir
-        subpath = strsplit(genpath(startingDirectory), {';', ':'});
+        subpath = strsplit(genpath(startingDirectory), pathsep);
         isOutDir = cellfun(@(x) contains(x, {'.'}), subpath); % I remove folder with dots.
         subpath(isOutDir) = [];
         nSub = length(subpath) - 1; % the last data is empty
