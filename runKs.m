@@ -6,7 +6,11 @@ function runKs(startingDirectory, probe_type)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Starting directory: directory to start finding files.
     if nargin < 1 || exist(startingDirectory, 'dir')~=7
-        startingDirectory = 'E:\';
+        if strcmp(computer, 'PCWIN64') % windows
+            startingDirectory = 'E:\';
+        elseif strcmp(computer, 'GLNXA64') % linux
+            startingDirectory = '/media/data/';
+        end
     end
     
     if nargin < 2
@@ -14,10 +18,15 @@ function runKs(startingDirectory, probe_type)
     end
     
     % Working directory: directory for saving temporary data. Choose fast drive like SSD.
-    workingDirectory = 'E:\temp'; 
+    workingDirectory = fullfile(startingDirectory, 'temp'); 
     
     % Kilosort location
-    kilosortDirectory = fullfile(getenv('OneDrive'), 'src\Kilosort2');
+    if strcmp(computer, 'PCWIN64') % windows
+        DROPBOX = fullfile('C:\\Users\', getenv('USERNAME'), 'Dropbox');
+    elseif strcmp(computer, 'GLNXA64') % linux
+        DROPBOX = '/home/kimd/Dropbox';
+    end
+    kilosortDirectory = fullfile(DROPBOX, 'src', 'Kilosort2');
     
     % Redo policy: choose whether do clustering if output file alreay exists, {'yes', 'no', 'ask'}
     recluster = 'no';
@@ -25,20 +34,24 @@ function runKs(startingDirectory, probe_type)
     % Make phy format file
     makePhy = true;
     
+    % npy plugin location
+    npyDirectory = fullfile(DROPBOX, 'src', 'npy-matlab', 'npy-matlab');
+    addpath(npyDirectory);
+    
     % Check sub-directories to find files
     checkSubDir = true;
     
     % Config file name
-    if strcmp(lower(probe_type), 'nidq')
+    if strcmpi(probe_type, 'nidq')
         fileType = '*.nidq.bin';  
     else
         fileType = '*.imec.ap.bin';  
     end
     
     configFileNameImec = 'configFile384';
-    configFileNameNidq = 'configFilehh3x2'; % Janelia acute 64-channel HH-3 probe (2x64)
+%     configFileNameNidq = 'configFilehh3x2'; % Janelia acute 64-channel HH-3 probe (2x64)
 %     configFileNameNidq = 'configFilehh2'; % Janelia acute 64-channel HH-2 probe (2x32)
-%     configFileNameNidq = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64)
+    configFileNameNidq = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                        USER PRESET END                          %%%
@@ -55,9 +68,14 @@ function runKs(startingDirectory, probe_type)
     
     %% Preparation
     % add path kilosort directory (excluding git directory with '.')
-    ksSubDir = strsplit(genpath(kilosortDirectory), ';');
+    ksSubDir = strsplit(genpath(kilosortDirectory), {';', ':'});
     isGitDir = cellfun(@(x) ismember('.', x), ksSubDir);
-    addpath(strjoin(ksSubDir(~isGitDir), ';'));
+    if strcmp(computer, 'PCWIN64')
+        addpath(strjoin(ksSubDir(~isGitDir), ';'));
+    elseif strcmp(computer, 'GLNXA64')
+        addpath(strjoin(ksSubDir(~isGitDir), ':'));
+    end
+    
     
     % make working directory
     if exist(workingDirectory, 'dir')~=7
@@ -109,9 +127,18 @@ function runKs(startingDirectory, probe_type)
 
                 disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', optimization']);
                 rez = learnAndSolve8b(rez);
+                
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', merge']);
+                rez = find_merges(rez, 1);
 
-                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', spilt']);
-                rez = splitAllClusters(rez);
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', spilt by svd']);
+                rez = splitAllClusters(rez, 1);
+                
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', spilt by amplitudes']);
+                rez = splitAllClusters(rez, 0);
+                
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', setting cutoff']);
+                rez = set_cutoff(rez);
 
                 disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', saving data to ', fname]);
                 save(fname, 'rez', '-v7.3');
@@ -142,7 +169,9 @@ function runKs(startingDirectory, probe_type)
             close all;
         end
     end
-    slack('runKs done');
+    try
+        slack('runKs done');
+    end
 end
 
 function ops = setOps(ops, fileName, excludedChannel)
