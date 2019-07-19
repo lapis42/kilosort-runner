@@ -88,7 +88,7 @@ function runKs(startingDirectory, probe_type)
             
             % load preset
             meta = readMeta(fileList{iFile});
-            if strcmp(meta.typeThis, 'imec') && strcmp(meta.nSavedChans, '385')
+            if strcmp(meta.typeThis, 'imec') 
                 eval([configFileNameImec, ';']);
             elseif strcmp(meta.typeThis, 'nidq')
                 eval([configFileNameNidq, ';']);
@@ -96,7 +96,7 @@ function runKs(startingDirectory, probe_type)
             ops.trange = [0, Inf];
             ops.wd = workingDirectory;
             ops.fproc = fullfile(workingDirectory, 'temp_wh.dat');
-            ops = setOps(ops, fileList{iFile}, excludedChannel{iFile});
+            ops = setOps(ops, fileList{iFile}, excludedChannel{iFile}, meta);
       
             % recluster policy check
             doSort = true;
@@ -170,7 +170,7 @@ function runKs(startingDirectory, probe_type)
     end
 end
 
-function ops = setOps(ops, fileName, excludedChannel)
+function ops = setOps(ops, fileName, excludedChannel, meta)
     load(ops.chanMap);
     connected(excludedChannel) = false;
 
@@ -180,13 +180,8 @@ function ops = setOps(ops, fileName, excludedChannel)
     cm.ycoords = ycoords(connected);
     ops.chanMap = cm;
     
-    nChannel = length(connected);
-    if nChannel == 384
-        ops.NchanTOT = 385;
-    elseif nChannel == 64 || nChannel == 128
-        ops.NchanTOT = nChannel + 32;
-    end
-    
+    ops.NchanTOT = meta.nSavedChannels;
+
     ops.fbinary = fileName;
     fileDir = fileparts(fileName);
     ops.rootZ = fileDir;
