@@ -93,10 +93,13 @@ function runKs(startingDirectory, probe_type)
             elseif strcmp(meta.typeThis, 'nidq')
                 eval([configFileNameNidq, ';']);
             end
+            % change chanMap directory
+            filesplits = strsplit(ops.chanMap, '\');
+            ops.chanMap = fullfile(kilosortDirectory, 'configFiles', filesplits{end});
             ops.trange = [0, Inf];
             ops.wd = workingDirectory;
             ops.fproc = fullfile(workingDirectory, 'temp_wh.dat');
-            ops = setOps(ops, fileList{iFile}, excludedChannel{iFile}, meta);
+            ops = setOps(ops, fileList{iFile}, excludedChannel{iFile}, meta, kilosortDirectory);
       
             % recluster policy check
             doSort = true;
@@ -170,7 +173,7 @@ function runKs(startingDirectory, probe_type)
     end
 end
 
-function ops = setOps(ops, fileName, excludedChannel, meta)
+function ops = setOps(ops, fileName, excludedChannel, meta, kilosortDirectory)
     load(ops.chanMap);
     connected(excludedChannel) = false;
 
@@ -180,7 +183,7 @@ function ops = setOps(ops, fileName, excludedChannel, meta)
     cm.ycoords = ycoords(connected);
     ops.chanMap = cm;
     
-    ops.NchanTOT = meta.nSavedChannels;
+    ops.NchanTOT = str2double(meta.nSavedChans);
 
     ops.fbinary = fileName;
     fileDir = fileparts(fileName);
