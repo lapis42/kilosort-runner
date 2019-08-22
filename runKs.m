@@ -19,6 +19,8 @@ function runKs(startingDirectory, configFileName, fileType)
 %       configFileName = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64) 
     end
 
+    % ops.NchanTOT = 385; % Please uncomment this to specify channel number or it will count from the config .mat file
+
     if nargin < 3
         fileType = '*.bin'; % file format to search
     end
@@ -40,6 +42,7 @@ function runKs(startingDirectory, configFileName, fileType)
     
     % Check sub-directories to find files
     checkSubDir = true;
+
     
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,6 +173,8 @@ function ops = setOps(ops, fileName, excludedChannel, meta, kilosortDirectory)
     
     if isfield(meta, 'nSavedChans')
         ops.NchanTOT = str2double(meta.nSavedChans);
+    elseif ~isfield(ops, 'NchanTOT')
+        ops.NchanTOT = length(chanMap);
     end
 
     ops.fbinary = fileName;
