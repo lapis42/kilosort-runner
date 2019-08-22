@@ -70,7 +70,7 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
                 path = uigetdir(startingDirectory, 'Select folder');
                 if ischar(path)
                     if checkSubDir
-                        subpath = strsplit(genpath(path), ';');
+                        subpath = strsplit(genpath(path), pathsep);
                         isOutDir = cellfun(@(x) contains(x, '.'), subpath); % I remove folder with dots.
                         subpath(isOutDir) = [];
                         nSub = length(subpath) - 1; % the last data is empty
@@ -81,7 +81,10 @@ function [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubD
                     else                         
                         files = dir(fullfile(path, fileType));
                     end
-                    
+                    % exclude '*.lf.bin'
+                    isLFP = contains({files.name}, '.lf.bin');
+                    files(isLFP) = [];
+               
                     nFile = length(files);
 
                     if nFile==0; continue; end

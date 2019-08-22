@@ -1,4 +1,4 @@
-function runKs(startingDirectory, probe_type)
+function runKs(startingDirectory, configFileName, fileType)
     %RUNKS Batch sorting using Kilosort2
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -6,52 +6,41 @@ function runKs(startingDirectory, probe_type)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Starting directory: directory to start finding files.
     if nargin < 1 || exist(startingDirectory, 'dir')~=7
-        if isunix 
-            startingDirectory = '/mnt/data/';
-        else
-            startingDirectory = 'E:\';
-        end
+        startingDirectory = '/mnt/data/';
     end
-    
+
+    % The default configuration file is located at 'Kilosort2/configFiles' folder.
+    % To generate your own configuration .mat file, check 'Kilosort2/configFiles/createChannelMapFile.m'
+    % To make configuration file, copy 'Kilosort2/configFiles/configFile384.m' and modify.
     if nargin < 2
-        probe_type = 'imec';
+        configFileName = 'configFile384'; % Neuropixel 3A, or 3B (1.0)
+%       configFileName = 'configFilehh3x2'; % Janelia acute 64-channel HH-3 probe (2x64)
+%       configFileName = 'configFilehh2'; % Janelia acute 64-channel HH-2 probe (2x32)
+%       configFileName = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64) 
+    end
+
+    if nargin < 3
+        fileType = '*.bin'; % file format to search
     end
     
     % Working directory: directory for saving temporary data. Choose fast drive like SSD.
     workingDirectory = fullfile(startingDirectory, 'temp'); 
     
-    % Kilosort location
-    if isunix 
-        DROPBOX = '/home/kimd/Dropbox';
-    else
-        DROPBOX = fullfile('C:\\Users\', getenv('USERNAME'), 'Dropbox');
-    end
-    kilosortDirectory = fullfile(DROPBOX, 'src', 'Kilosort2');
+    % Kilosort location (just to make sure that your Kilosort2 folder is in your setpaths)
+    kilosortDirectory = '/home/kimd/Dropbox/src/Kilosort2';
     
+    % npy plugin location (just to make sure that your npy plugin folder is in your setpaths)
+    npyDirectory = '/home/kimd/Dropbox/src/npy-matlab/npy-matlab';
+
     % Redo policy: choose whether do clustering if output file alreay exists, {'yes', 'no', 'ask'}
-    recluster = 'no';
-    
+    recluster = 'ask'; 
+
     % Make phy format file
     makePhy = true;
-    
-    % npy plugin location
-    npyDirectory = fullfile(DROPBOX, 'src', 'npy-matlab', 'npy-matlab');
-    addpath(npyDirectory);
     
     % Check sub-directories to find files
     checkSubDir = true;
     
-    % Config file name
-    if strcmpi(probe_type, 'nidq')
-        fileType = '*.nidq.bin';  
-    else
-        fileType = '*.imec.ap.bin';  
-    end
-    
-    configFileNameImec = 'configFile384';
-%     configFileNameNidq = 'configFilehh3x2'; % Janelia acute 64-channel HH-3 probe (2x64)
-%     configFileNameNidq = 'configFilehh2'; % Janelia acute 64-channel HH-2 probe (2x32)
-    configFileNameNidq = 'configFilehh3'; % Janelia acute 64-channel HH-3 probe (1x64)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                        USER PRESET END                          %%%
@@ -65,13 +54,16 @@ function runKs(startingDirectory, probe_type)
     [fileList, excludedChannel] = fileSelector(startingDirectory, checkSubDir, fileType);
     if isempty(fileList); return; end
 
-    
     %% Preparation
     % add path kilosort directory (excluding git directory with '.')
     ksSubDir = strsplit(genpath(kilosortDirectory), pathsep);
     isGitDir = cellfun(@(x) ismember('.', x), ksSubDir);
     addpath(strjoin(ksSubDir(~isGitDir), pathsep));
-    
+
+    % add path npy-matlab directory
+    npySubDir = strsplit(genpath(npyDirectory), pathsep);
+    isGitDir = cellfun(@(x) ismember('.', x), npySubDir);
+    addpath(strjoin(npySubDir(~isGitDir), pathsep));
     
     % make working directory
     if exist(workingDirectory, 'dir')~=7
@@ -87,18 +79,14 @@ function runKs(startingDirectory, probe_type)
             disp([newline, '================    ', fileName, '    ================', newline]);
             
             % load preset
-            meta = readMeta(fileList{iFile});
-            if strcmp(meta.typeThis, 'imec') 
-                eval([configFileNameImec, ';']);
-            elseif strcmp(meta.typeThis, 'nidq')
-                eval([configFileNameNidq, ';']);
-            end
-            % change chanMap directory
+            eval(configFileName, ';');
             filesplits = strsplit(ops.chanMap, '\');
             ops.chanMap = fullfile(kilosortDirectory, 'configFiles', filesplits{end});
             ops.trange = [0, Inf];
             ops.wd = workingDirectory;
             ops.fproc = fullfile(workingDirectory, 'temp_wh.dat');
+
+            meta = readMeta(fileList{iFile});
             ops = setOps(ops, fileList{iFile}, excludedChannel{iFile}, meta, kilosortDirectory);
       
             % recluster policy check
@@ -168,9 +156,6 @@ function runKs(startingDirectory, probe_type)
             close all;
         end
     end
-    try
-        slack('runKs done');
-    end
 end
 
 function ops = setOps(ops, fileName, excludedChannel, meta, kilosortDirectory)
@@ -183,7 +168,9 @@ function ops = setOps(ops, fileName, excludedChannel, meta, kilosortDirectory)
     cm.ycoords = ycoords(connected);
     ops.chanMap = cm;
     
-    ops.NchanTOT = str2double(meta.nSavedChans);
+    if isfield(meta, 'nSavedChans')
+        ops.NchanTOT = str2double(meta.nSavedChans);
+    end
 
     ops.fbinary = fileName;
     fileDir = fileparts(fileName);
@@ -195,7 +182,8 @@ function meta = readMeta(binFile)
     % Parse ini file into cell entries C{1}{i} = C{2}{i}
     metaFile = replace(binFile, '.bin', '.meta');
     if exist(metaFile, 'file')~=2
-        error('No meta file exists.');
+        meta = [];
+        return
     end
     fid = fopen(metaFile, 'r');
     C = textscan(fid, '%[^=] = %[^\r\n]');

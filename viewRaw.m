@@ -1,7 +1,7 @@
 function viewRaw(binFile)
     %VIEWRAW Opens raw datafile
     
-    S.timeRange = [0, 0.5]; % seconds
+    S.timeRange = [0, 0.05]; % seconds
     S.scale = 8; % 8 y-axis tick / 1 mV = 0.125 mV / tick
     
     if nargin == 0
