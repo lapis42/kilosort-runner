@@ -1,4 +1,4 @@
-# Kilosort2 batch runner
+# Kilosort batch runner
 
 * **runKs2.m**: automated spike-sorting using Kilosort2
 * **runKs3.m**: automated spike-sorting using Kilosort3
