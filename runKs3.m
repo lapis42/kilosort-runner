@@ -15,7 +15,7 @@ function runKs3(startingDirectory, configFileName, fileType)
 
     % 2. Select configuration file
     if nargin < 2 || isempty(configFileName)
-        configFileName = ''; % configuration file should be in the 'sort-runner/config' folder
+        configFileName = ''; % configuration file should be in the 'kilosort-runner/config' folder
     end
 
 
@@ -97,7 +97,7 @@ function runKs3(startingDirectory, configFileName, fileType)
                 chanMapTemp = strsplit(ops.chanMap, '\');
                 chanMapFn = chanMapTemp{end};
                 chanMapKs = fullfile(kilosortDirectory, 'configFiles', chanMapFn);
-                chanMapSr = fullfile(sortrunnerDirectory, 'configFiles', chanMapFn);
+                chanMapSr = fullfile(sortrunnerDirectory, 'config', chanMapFn);
                 if exist(chanMapKs, 'file') == 2
                     ops.chanMap = chanMapKs;
                 elseif exist(chanMapSr, 'file') == 2
