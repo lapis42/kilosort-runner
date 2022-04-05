@@ -33,11 +33,14 @@
 % patternType = 1, horizontal stripe of 96-channel height across all four
 %                   shanks starting from "botRow", valid values = 0-592
 %               (4 shanks, 2 blocks, 96 channels per shank, 0.72 mm)
-patternType = 1; 
+patternType = 0; 
 shankChoice = 0;
 botRow = 0;
 
-if exist('neuropix24strip.mat', 'file') == 0
+fn = ['neuropix24shank', num2str(shankChoice), '.mat'];
+
+if exist(fn, 'file') == 0
+
     if patternType == 0
         blockSelect = repmat(shankChoice+1, 1, 8);
     elseif patternType == 1
@@ -72,9 +75,9 @@ if exist('neuropix24strip.mat', 'file') == 0
     end
 
     fs = 30000; % sampling frequency
-    save('neuropix24strip.mat', ...
+    save(fn, ...
         'chanMap','connected', 'xcoords', 'ycoords', 'kcoords', 'chanMap0ind', 'fs')
 end
 
-ops.chanMap             = 'neuropix24strip.mat';
+ops.chanMap             = fn;
 ops.fs                  = 30000;        
