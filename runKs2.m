@@ -28,10 +28,10 @@ function runKs2(startingDirectory, configFileName, fileType)
     workingDirectory = fullfile(startingDirectory, 'temp'); 
     
     % Kilosort location
-    kilosortDirectory = '/home/kimd/Dropbox/src/Kilosort2';
+    kilosortDirectory = '/home/kimd/Dropbox/src/matlab-code/Kilosort2';
     
     % npy plugin location
-    npyDirectory = '/home/kimd/Dropbox/src/npy-matlab/npy-matlab';
+    npyDirectory = '/home/kimd/Dropbox/src/matlab-code/npy-matlab/npy-matlab';
 
     % Redo policy: choose whether do clustering if output file alreay exists, {'yes', 'no', 'ask'}
     recluster = 'ask'; 
@@ -54,23 +54,28 @@ function runKs2(startingDirectory, configFileName, fileType)
     if isempty(fileList); return; end
 
     %% Preparation
-    % add path kilosort directory (excluding git directory with '.')
+    % addpath kilosort directory (excluding git directory with '.')
     ksSubDir = strsplit(genpath(kilosortDirectory), pathsep);
     isGitDir = cellfun(@(x) ismember('.', x), ksSubDir);
     addpath(strjoin(ksSubDir(~isGitDir), pathsep));
 
-    % add path npy-matlab directory
+    % addpath npy-matlab directory
     npySubDir = strsplit(genpath(npyDirectory), pathsep);
     isGitDir = cellfun(@(x) ismember('.', x), npySubDir);
     addpath(strjoin(npySubDir(~isGitDir), pathsep));
+
+    % current file location (and addpath)
+    sortrunnerDirectory = fileparts(mfilename('fullfilepath'));
+
+    srSubDir = strsplit(genpath(sortrunnerDirectory), pathsep);
+    isGitDir = cellfun(@(x) ismember('.', x), srSubDir);
+    addpath(strjoin(srSubDir(~isGitDir), pathsep));
     
     % make working directory
     if exist(workingDirectory, 'dir')~=7
         mkdir(workingDirectory);
     end
 
-    % current file location
-    sortrunnerDirectory = fileparts(mfilename('fullfilepath'));
     
     %% run
     nFile = length(fileList);
@@ -79,16 +84,22 @@ function runKs2(startingDirectory, configFileName, fileType)
         if exist(fileList{iFile}, 'file') == 2
             [~, fileName] = fileparts(fileList{iFile});
             disp([newline, '================    ', fileName, '    ================', newline]);
+
+            % load meta data
+            meta = readMeta(fileList{iFile});
             
             % load preset
             run(fullfile(kilosortDirectory, 'configFiles', 'configFile384.m')); % load default configuration
             if ~isempty(configFileName) % overwrite default configuration
-                configPath = fullfile(sortrunnerDirectory, [configFileName, '.m']);
+                configPath = fullfile(sortrunnerDirectory, 'config', [configFileName, '.m']);
                 if exist(configPath, 'file') == 2
                     run(configPath);
                 else
                     error('Config file does not exist');
                 end
+            else
+                % if config file is not specified try to check meta data
+                ops = makeChanMap(ops, fileList{iFile}, meta);
             end
 
             % search channel map
@@ -105,11 +116,11 @@ function runKs2(startingDirectory, configFileName, fileType)
                     error('Cannot find channel map mat file');
                 end
             end
+
             ops.trange = [0, Inf];
             ops.wd = workingDirectory;
             ops.fproc = fullfile(workingDirectory, 'temp_wh.dat');
 
-            meta = readMeta(fileList{iFile});
             ops = setOps(ops, fileList{iFile}, excludedChannel{iFile}, meta, kilosortDirectory);
       
             % recluster policy check
@@ -152,6 +163,13 @@ function runKs2(startingDirectory, configFileName, fileType)
 
                 disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', saving data to phy format']);
                 rezToPhy(rez, ops.saveDir);
+
+                disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', saving data as a mat file']);
+                rez.cProj = [];
+                rez.cProjPC = [];
+                fname = fullfile(ops.saveDir, 'rez2.mat');
+                save(fname, 'rez', '-v7.3');
+
             end
 
             disp(['==== ', datestr(datetime, 'yyyy/mm/dd HH:MM:ss'), ', done']);
@@ -161,7 +179,64 @@ function runKs2(startingDirectory, configFileName, fileType)
 end
 
 
+function ops = makeChanMap(ops, binFile, meta)
+
+    chanMapFile = fullfile(fileparts(binFile), 'chanMap.mat');
+
+    Nchannels = meta.snsApLfSy(1);
+    connected = true(Nchannels, 1);
+    chanMap = 1:Nchannels;
+    chanMap0ind = chanMap - 1;
+    kcoords = ones(Nchannels, 1);
+
+    % check imec
+    if strcmp(meta.typeThis, 'imec')
+
+        if meta.imDatPrb_type == 0
+
+            % NP1
+            xPos = {repmat([43, 11; 27, 59], 240, 1)};
+            yPos = {repmat((0:20:9580)', 1, 2)};
+
+        else
+
+            % NP2
+            xPos = cell(1, 4);
+            yPos = cell(1, 4);
+            for iShank = 1:4
+                xPos{iShank} = repmat([0, 32] + 250*(iShank-1), 640, 1);
+                yPos{iShank} = repmat((0:15:9585)', 1, 2);
+            end
+
+        end
+    else
+
+        xPos = {zeros(Nchannels, 1)};
+        yPos = {(1:Nchannels)' * 15};
+        
+    end
+
+    xcoords = zeros(Nchannels, 1);
+    ycoords = zeros(Nchannels, 1);
+    for iC = 1:Nchannels
+        map = str2double(split(meta.snsShankMap{iC}, ':'))+1;
+        xcoords(iC) = xPos{map(1)}(map(3), map(2));
+        ycoords(iC) = yPos{map(1)}(map(3), map(2));
+    end
+
+    fs = meta.imSampRate;
+
+
+    save(chanMapFile, ...
+        'chanMap', 'connected', 'xcoords', 'ycoords', 'kcoords', 'chanMap0ind', 'fs');
+
+    ops.chanMap = chanMapFile;
+
+end
+
+
 function ops = setOps(ops, fileName, excludedChannel, meta, kilosortDirectory)
+
     load(ops.chanMap);
     connected(excludedChannel) = false;
 
@@ -172,7 +247,7 @@ function ops = setOps(ops, fileName, excludedChannel, meta, kilosortDirectory)
     ops.chanMap = cm;
     
     if isfield(meta, 'nSavedChans')
-        ops.NchanTOT = str2double(meta.nSavedChans);
+        ops.NchanTOT = meta.nSavedChans;
     elseif ~isfield(ops, 'NchanTOT')
         ops.NchanTOT = length(chanMap);
     end
@@ -181,6 +256,7 @@ function ops = setOps(ops, fileName, excludedChannel, meta, kilosortDirectory)
     fileDir = fileparts(fileName);
     ops.rootZ = fileDir;
     ops.saveDir = fileDir;
+
 end
 
 
@@ -204,7 +280,20 @@ function meta = readMeta(binFile)
         if tag(1) == '~'
             % remake tag excluding first character
             tag = sprintf('%s', tag(2:end));
+            if strcmp(tag, 'imroTbl')
+                meta.(tag) = regexp(C{2}{i}, '\d+ \d+ \d+ \d+ \d+ \d+', 'match');
+            elseif strcmp(tag, 'snsChanMap')
+                meta.(tag) = regexp(C{2}{i}, 'AP\d+;\d+:\d+', 'match');
+            elseif strcmp(tag, 'snsShankMap')
+                meta.(tag) = regexp(C{2}{i}, '\d+:\d+:\d+:\d+', 'match');
+            end
+        else
+            valueTemp = str2double(strsplit(C{2}{i}, ','));
+            if isnan(valueTemp)
+                meta.(tag) = C{2}{i};
+            else
+                meta.(tag) = valueTemp;
+            end
         end
-        meta.(tag) = C{2}{i};
     end
 end
