@@ -1,13 +1,27 @@
-# Kilosort batch runner
+# Kilosort Batch Runner
 
-* **runKs2.m**: automated spike-sorting using Kilosort2
-* **runKs3.m**: automated spike-sorting using Kilosort3
-* **runPhy.m**: manual spike-sorting using Phy (for windows only)
-* **saveKs.m**: save phy format as a matlab struct
-* **viewRaw.m**: raw binary data viewer (for SpikeGLX bin files)
+This repository contains a set of MATLAB scripts for automated and manual spike sorting using Kilosort and Phy.
+
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `runKs2.m` | Automated spike-sorting using Kilosort2 |
+| `runKs3.m` | Automated spike-sorting using Kilosort3 |
+| `runPhy.m` | Manual spike-sorting using Phy (Windows only) |
+| `saveKs.m` | Save Phy format as a MATLAB struct |
+| `viewRaw.m` | Raw binary data viewer for SpikeGLX bin files |
+
+## Usage
+
+1. Ensure Kilosort2/3 and npy-matlab are in your MATLAB path.
+2. Run the desired script (e.g., `runKs2`) with the data directory as an argument.
+3. Follow the prompts to select files and start the sorting process.
+
+- [New] You don't need to have a separate channel map file, as these scripts read the SpikeGLX meta file to parse the channel map information. 🗺️
 
 
-```
+```matlab
 >> runKs2('/mnt/data')
 *****************************************
 ******** Batch Kilosort2 sorting ********
