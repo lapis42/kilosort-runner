@@ -143,10 +143,7 @@ function ops = setOps(workingDirectory, fileName, excludedChannel)
     ops.fbinary = fileName;
     fileDir = fileparts(fileName);
     ops.rootZ = fileDir;
-    ops.saveDir = fullfile(fileDir, 'kilosort2');
-    if ~isfolder(ops.saveDir)
-        mkdir(ops.saveDir);
-    end
+    ops.saveDir = fileDir;
 end
 
 function ops = getDefaultOps(workingDirectory)
